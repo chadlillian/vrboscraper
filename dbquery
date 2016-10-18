@@ -1,0 +1,60 @@
+#!/home/chad/anaconda/bin/python
+
+from pymongo import MongoClient
+import pandas as pd
+
+DATABASE = 'VRBO'
+DATABASE = 'VRBO_scenic_hwy_98'
+#COLLECTION = 'Properties'
+STAT_COLLECTION = 'Stats'
+CAL_COLLECTION = 'Calendars'
+
+def getRatesDataFrame():
+    client = MongoClient()
+    db = client[DATABASE]
+    collection = db[CAL_COLLECTION]
+
+    properties = collection.find()
+    rates = pd.DataFrame()
+    occupied = pd.DataFrame()
+    for prop in properties:
+        pid = prop['_id']
+        a = prop.keys()[0]
+        del prop['_id']
+        p = pd.DataFrame.from_dict(prop,orient='index')
+        if 'Weekly' in p.columns and 'am' in p.columns:
+            rates[pid] = pd.Series(p['Weekly'],p.index)
+            occupied[pid] = pd.Series(p['am'],p.index)
+            print pid,'*'
+        else:
+            print pid
+    rates.to_csv('rates')
+    occupied.to_csv('occupied')
+
+def getVitalStats():
+    client = MongoClient()
+    db = client[DATABASE]
+    collection = db[STAT_COLLECTION]
+    ratescoll = db[CAL_COLLECTION]
+
+    ids = [p['_id'] for p in collection.find({'Bedrooms':'1'})]
+    properties = ratescoll.find({'_id':{'$in':ids}})
+    
+    rates = pd.DataFrame()
+    occupied = pd.DataFrame()
+    for prop in properties:
+        pid = prop['_id']
+        a = prop.keys()[0]
+        del prop['_id']
+        p = pd.DataFrame.from_dict(prop,orient='index')
+        if 'Weekly' in p.columns and 'am' in p.columns:
+            rates[pid] = pd.Series(p['Weekly'],p.index)
+            occupied[pid] = pd.Series(p['am'],p.index)
+            print pid,'*'
+        else:
+            print pid
+    rates.to_csv('rates')
+    occupied.to_csv('occupied')
+
+#getVitalStats()
+getRatesDataFrame()

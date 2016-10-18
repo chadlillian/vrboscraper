@@ -1,0 +1,38 @@
+#!/home/chad/anaconda/bin/python
+
+from pymongo import MongoClient
+import sys
+
+class driverstuff():
+    def __init__(self):
+        self.client = MongoClient()
+
+
+    def readInputFile(self,filename):
+        lines = open(filename).readlines()
+        args = {}
+        for line in lines:
+            qline = line.split(':')
+            k = qline[0].strip()
+            v = qline[1].strip()
+            print k,v
+            if k == 'vrbonumbers':
+                args[k] = v.split()
+            else:
+                args[k] = v
+        print args
+        self.databasename = args['DATABASE']
+        self.db = self.client[args['DATABASE']]
+        self.collection = self.db['Properties']
+
+        for i in args['vrbonumbers']:
+            self.collection.insert({'_id':i})
+
+    def getDBName(self):
+        return self.databasename
+
+if __name__=="__main__":
+    filename = sys.argv[1]
+    a = driverstuff()
+    a.readInputFile(filename)
+    dbn = a.getDBName()

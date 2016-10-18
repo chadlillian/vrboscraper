@@ -1,0 +1,50 @@
+#!/home/chad/anaconda/bin/python
+
+import propertyStats as props
+import sys
+import pandas as pd
+
+class driverstuff():
+    def __init__(self):
+        None 
+
+    def strfrmt(self,num):
+        if num.__class__ != (None).__class__:
+            return num
+        else:
+            return 'X'
+
+    def toascii(self,s):
+        ss = s.strip()
+        return ''.join(i for i in ss if ord(i)<128)
+
+    def openWebSite(self,link):
+        self.condoStats = []
+        unit = props.propertyStats()
+        for prop in self.properties:
+            stats = unit.readProperty(link+prop['vrbo'])
+            avg = stats['average']
+            count = stats['numreviews']
+            print "%-40s, %-8s, %-4s, %-5s"%(prop['name'], prop['vrbo'],self.strfrmt(count),self.strfrmt(avg))
+            a = prop.copy()
+            a.update(stats)
+            self.condoStats.append(a)
+
+
+    def getProperties(self,filename):
+        p = pd.read_excel(filename)
+        self.properties = [{'name':nv[0],'vrbo':str(nv[1])} for nv in p.values.tolist()]
+
+    def writeStats(self,filename):
+        q = [[self.toascii(cs['name']), self.toascii(cs['vrbo']),self.strfrmt(cs['numreviews']),self.strfrmt(cs['average'])] for cs in self.condoStats]
+        self.condoStatsdf = pd.DataFrame(q,columns=['Property Name','VRBO', 'Quantity of Reviews','Average Reviews'])
+        writer = pd.ExcelWriter(filename)
+        self.condoStatsdf.to_excel(writer,'Today',index=False)
+        writer.save()
+
+vrbonums = sys.argv[1]
+link = 'https://www.vrbo.com/'
+a = driverstuff()
+a.getProperties(vrbonums)
+a.openWebSite(link)
+a.writeStats('forTaylor.xlsx')

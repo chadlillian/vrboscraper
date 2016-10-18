@@ -1,0 +1,75 @@
+#!/home/chad/anaconda/bin/python
+
+import math
+from selenium import webdriver
+#from bs4 import BeautifulSoup
+from time import sleep
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from pymongo import MongoClient
+
+MAXPAGES = 50
+DATABASE = 'VRBO_scenic_hwy_98'
+COLLECTION = 'Properties'
+
+class driverstuff():
+    def __init__(self):
+        #self.driver= webdriver.Firefox()
+        self.driver= webdriver.Chrome(executable_path=r"/home/chad/chromedriver")
+        #self.driver= webdriver.PhantomJS()
+
+        self.client = MongoClient()
+        self.db = self.client[DATABASE]
+        self.collection = self.db[COLLECTION]
+####    TODO remove this
+        self.collection.remove({})
+
+    def getNumberOfPages(self):
+        wait = WebDriverWait(self.driver,10)
+        element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME,'pager')))
+
+        pages = self.driver.find_elements_by_class_name('pager')
+        self.numproperties = int(pages[0].text.split('of')[1])
+        self.numpages = math.ceil(self.numproperties/50.0)
+
+        if self.numpages > MAXPAGES:
+            self.numpages = MAXPAGES
+
+    def getVRBONumbers(self):
+        wait = WebDriverWait(self.driver,10)
+        try:
+            element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME,'property-subtitle')))
+            self.reviewtext = self.driver.find_elements_by_class_name('property-subtitle')
+        except:
+            self.reviewtext = []
+            
+        for i in self.reviewtext:
+            vrbonumber = i.text.strip().strip('#')
+            self.vrboNumbers.append(vrbonumber)
+            self.collection.insert({'_id':vrbonumber})
+        
+    def searchLocation(self,link):
+        self.vrboNumbers = []
+        self.driver.get(link)
+        self.getNumberOfPages()
+        for i in range(1,int(self.numpages)):
+        #for i in range(1,2):
+            pagelink = link+'&page=%i'%i
+            print pagelink
+            self.driver.get(pagelink)
+            self.getVRBONumbers()
+        self.driver.quit()
+        print "records found: ",self.collection.find().count()
+
+    def getProperties(self):
+        for doc in self.collection.find():
+            print doc
+        return self.vrboNumbers
+        
+if __name__=="__main__":
+    url = 'https://www.vrbo.com/vacation-rentals/usa/florida/north-west/destin?sleeps=1-plus'
+    url = 'https://www.vrbo.com/vacation-rentals/usa/florida/north-west/destin/scenic-hwy-98?sleeps=1-plus'
+    a = driverstuff()
+    a.searchLocation(url)
+#    w = a.getProperties()

@@ -1,0 +1,23 @@
+#!/home/chad/anaconda/bin/python
+
+import scrapecomps as sc
+import sys
+
+def readInputFile(filename):
+        lines = open(filename).readlines()
+        args = {}
+        for line in lines:
+            qline = line.split(':')
+            k = qline[0].strip()
+            v = qline[1].strip()
+            if k == 'vrbonumbers':
+                args[k] = v.split()
+            else:
+                args[k] = v
+
+        return args['DATABASE']
+
+dbn = readInputFile(sys.argv[1])
+a = sc.driverstuff(dbn)
+a.findAllProperties(0.0)
+a.readAllProperties()
